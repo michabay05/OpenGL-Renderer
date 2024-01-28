@@ -9,26 +9,34 @@ import java.nio.file.Paths;
 // TODO: look into using java buffers instead of arrays for primitive types that need
 // to be passed by reference
 
+// In the future, there will more shader types such as textures, lighting, etc.
 enum ShaderType {
     Triangle,
 }
 
 class Shader {
+    // Stores the filepath of the vertex shader
     private final String vertexFilePath;
+    // Stores the filepath of the fragment shader
     private final String fragmentFilePath;
 
+    // Vertex shader ID in OpenGL
     private int vertexShaderID;
+    // Fragment shader ID in OpenGL
     private int fragmentShaderID;
+    // Shader program ID with which the vertex and fragment shader IDs are associated with
     private int programID;
 
     private ShaderType type;
 
+    // 'Custom' shader constructor, which expects specific shader files
     public Shader(String vertPath, String fragmentPath) {
         vertexFilePath = vertPath;
         fragmentFilePath = fragmentPath;
         type = null;
     }
 
+    // Predefined shader constructor
     public Shader(ShaderType type) {
         this.type = type;
         switch (type) {
@@ -47,6 +55,7 @@ class Shader {
         }
     }
 
+    /* ========== UNIFORM SETTING METHODS ========== */
     public void setFloat(String name, float v0) {
         int loc = glGetUniformLocation(programID, name);
         glUniform1f(loc, v0);
@@ -62,6 +71,7 @@ class Shader {
         glUniform3f(loc, v0, v1, v2);
     }
 
+    // Attachs and links the compiled shader sources to the shader program ID
     public boolean load() {
         if (!compile(vertexFilePath, true) || !compile(fragmentFilePath, false)) {
             return false;
@@ -82,7 +92,7 @@ class Shader {
         }
         // Use shader after compiling and linking shader program
         programID = progID;
-        // NOTE: To apply the shader, 'use()' must be explicitly called
+        // NOTE: To apply the shader, the shader must be explicitly called, i.e. bound
 
         // After creating the shaders and linking them, the original shaders have to deleted
         glDeleteShader(vertexShaderID);
@@ -90,14 +100,18 @@ class Shader {
         return true;
     }
 
+    // Applies or uses this shader when called
     public void bind() {
         glUseProgram(programID);
     }
 
+    // Deselects this shader when called
     public void unbind() {
         glUseProgram(0);
     }
 
+    // Reads the source code of the vertex or fragment shader and compiles the code
+    // the code appropriately (depending on which shader it is)
     private boolean compile(String filepath, boolean isVertexShader) {
         int shaderID = glCreateShader(isVertexShader ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
         String source = null;

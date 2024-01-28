@@ -58,44 +58,15 @@ class Main {
             System.out.printf("[RESIZE] new window size: (%d, %d)\n", w, h);
         });
 
-        // NOTE: each primitive or texture should have its own shader
-        // There should no longer be a global shader
-        /* if (!shader.load()) {
-            System.out.println("[ERROR] Unable to load shaders");
-            System.exit(0);
-        } */
-
-        GLColor[] colors = {
-            GLColor.RED,
-            GLColor.WHITE,
-            GLColor.BLUE,
-            GLColor.BLACK,
-            GLColor.GREEN,
-            GLColor.YELLOW,
-            GLColor.MAGENTA,
-            GLColor.SKYBLUE,
-            GLColor.MAROON
-        };
-        ArrayList<Vector2f> v = new ArrayList<>();
-        int n = 10;
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                float x = (float)Math.random();
-                float y = (float)Math.random();
-                float ws = (float)width*.8f/n;
-                float hs = (float)height*.9f/n;
-                v.add(new Vector2f(ws*.1f+ws* i + ws*.3f * x, hs*.05f+hs * j));
-            }
-        }
-
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
 		while (!glfwWindowShouldClose(window)) {
             rend.clear(20, 20, 20);
-			// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            rend.drawRectV(new Vector2f(200, 200), new Vector2f(60), GLColor.SKYBLUE);
-            rend.present();
+            rend.begin();
+                rend.drawRect(new Vector2f(200, 200), new Vector2f(60.0f), Color.SKYBLUE);
+                rend.drawCircle(new Vector2f(400, 200), 50, Color.MAROON);
+            rend.end();
 
 			glfwSwapBuffers(window); // swap the color buffers
 
