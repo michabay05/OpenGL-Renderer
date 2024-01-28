@@ -82,7 +82,7 @@ class Shader {
         }
         // Use shader after compiling and linking shader program
         programID = progID;
-        // To apply the shader, 'use()' must be explicitly called
+        // NOTE: To apply the shader, 'use()' must be explicitly called
 
         // After creating the shaders and linking them, the original shaders have to deleted
         glDeleteShader(vertexShaderID);
@@ -90,8 +90,12 @@ class Shader {
         return true;
     }
 
-    public void use() {
+    public void bind() {
         glUseProgram(programID);
+    }
+
+    public void unbind() {
+        glUseProgram(0);
     }
 
     private boolean compile(String filepath, boolean isVertexShader) {

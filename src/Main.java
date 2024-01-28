@@ -3,6 +3,9 @@ import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
+import java.util.ArrayList;
+import org.joml.Vector2f;
+
 import java.nio.*;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -62,6 +65,28 @@ class Main {
             System.exit(0);
         } */
 
+        GLColor[] colors = {
+            GLColor.RED,
+            GLColor.WHITE,
+            GLColor.BLUE,
+            GLColor.BLACK,
+            GLColor.GREEN,
+            GLColor.YELLOW,
+            GLColor.MAGENTA,
+            GLColor.SKYBLUE,
+            GLColor.MAROON
+        };
+        ArrayList<Vector2f> v = new ArrayList<>();
+        int n = 10;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                float x = (float)Math.random();
+                float y = (float)Math.random();
+                float ws = (float)width*.8f/n;
+                float hs = (float)height*.9f/n;
+                v.add(new Vector2f(ws*.1f+ws* i + ws*.3f * x, hs*.05f+hs * j));
+            }
+        }
 
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
@@ -69,9 +94,7 @@ class Main {
             rend.clear(20, 20, 20);
 			// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            // rend.drawRect(100, 100, 100, 100, GLColor.BLUE);
-            // rend.drawRect(200, 300, 100, 100, GLColor.BLUE);
-            rend.drawCircle(0, 0, 100, GLColor.RED);
+            rend.drawRectV(new Vector2f(200, 200), new Vector2f(60), GLColor.SKYBLUE);
             rend.present();
 
 			glfwSwapBuffers(window); // swap the color buffers
@@ -94,7 +117,7 @@ class Main {
 		// Configure GLFW
 		glfwDefaultWindowHints(); // optional, the current window hints are already the default
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
 
 		// Create the window
         width = 800;

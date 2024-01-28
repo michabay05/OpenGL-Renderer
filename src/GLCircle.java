@@ -13,7 +13,6 @@ class GLCircle implements GLDraw {
     private int vboID;
 
     private Vector2f[] vertices;
-    private int segments;
     private GLColor color;
 
     static {
@@ -22,14 +21,9 @@ class GLCircle implements GLDraw {
     }
 
     public GLCircle(Vector2f[] vertices, GLColor color) {
+        vaoID = 0;
+        vboID = 0;
         this.vertices = vertices;
-        this.segments = DEFAULT_SEGMENTS_COUNT;
-        this.color = color;
-    }
-
-    public GLCircle(Vector2f[] vertices, int segments, GLColor color) {
-        this.vertices = vertices;
-        this.segments = segments;
         this.color = color;
     }
 
@@ -55,11 +49,12 @@ class GLCircle implements GLDraw {
         glBindBuffer(GL_ARRAY_BUFFER, vboID);
         glBufferData(GL_ARRAY_BUFFER, Util.v2tofs(v), GL_STATIC_DRAW);
 
-        shader.use();
+        shader.bind();
         shader.setV3f("color", color.r(), color.g(), color.b());
         glDrawArrays(GL_TRIANGLES, 0, v.length);
 
         // Unbinding after use
+        // shader.unbind();
         glDisableVertexAttribArray(0);
         glBindVertexArray(0);
     }
