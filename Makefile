@@ -15,7 +15,7 @@ endif
 SOURCES:=$(wildcard src/*.java)
 CLASSES:=$(patsubst src/%.java, classes/%.class, $(SOURCES))
 
-.PHONY: all init setup
+.PHONY: all init setup clean
 
 all: setup $(CLASSES)
 	java -cp src:$(LIBS):classes Main
@@ -29,3 +29,6 @@ init: setup
 
 setup:
 	mkdir -p classes
+
+clean:
+	rm -rf classes/*
