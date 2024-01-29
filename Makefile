@@ -1,19 +1,31 @@
-MATH_LIB=lib/joml-1.10.5.jar
-GLFW_LIB=lib/lwjgl-glfw-natives-linux.jar:lib/lwjgl-glfw.jar
-LWGL_LIB=lib/lwjgl.jar:lib/lwjgl-natives-linux.jar
-OPENGL_LIB=lib/lwjgl-opengl.jar:lib/lwjgl-opengl-natives-linux.jar
-STB_LIB=lib/lwjgl-stb.jar:lib/lwjgl-stb-natives-linux.jar
-LIBS=$(MATH_LIB):$(GLFW_LIB):$(LWGL_LIB):$(OPENGL_LIB):$(STB_LIB)
+COMMON_LIB:=lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwjgl.jar:lib/common/lwjgl-opengl.jar:lib/common/lwjgl-stb.jar
+WINDOWS_LIB:=lib/windows/lwjgl-glfw-natives-windows.jar:lib/windows/lwjgl-natives-windows.jar:lib/windows/lwjgl-opengl-natives-windows.jar:lib/windows/lwjgl-stb-natives-windows.jar
+LINUX_LIB:=lib/linux/lwjgl-glfw-natives-linux.jar:lib/linux/lwjgl-natives-linux.jar:lib/linux/lwjgl-opengl-natives-linux.jar:lib/linux/lwjgl-stb-natives-linux.jar
 
-SOURCES = $(wildcard src/*.java)
-CLASSES = $(patsubst src/%.java, classes/%.class, $(SOURCES))
+LIBS:=$(COMMON_LIB)
+# Here `addsuffix` function is used to concatenate the common lib string with
+# the OS-specific lib WITHOUT a space. Using a '+=' placed a space between
+# the two strings
+ifeq ($(OS),Windows_NT)
+	LIBS:=$(addsuffix :$(WINDOWS_LIB),$(LIBS))
+else
+	LIBS:=$(addsuffix :$(LINUX_LIB),$(LIBS))
+endif
 
-all: $(CLASSES)
+SOURCES:=$(wildcard src/*.java)
+CLASSES:=$(patsubst src/%.java, classes/%.class, $(SOURCES))
+
+.PHONY: all init setup
+
+all: setup $(CLASSES)
 	java -cp src:$(LIBS):classes Main
 
 classes/%.class: src/%.java
 	javac -cp src:$(LIBS):classes $^ -d classes
 
-init:
+init: setup
 	javac -cp src:$(LIBS):classes src/*.java -d classes
 	java -cp src:$(LIBS):classes Main
+
+setup:
+	mkdir -p classes

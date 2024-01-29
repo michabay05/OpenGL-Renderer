@@ -6,6 +6,8 @@ import org.lwjgl.opengl.GL33;
 import static org.lwjgl.opengl.GL33.*;
 
 class GLRenderer {
+    private static final int DEFAULT_SEGMENTS_COUNT = 32;
+
     // Width of the viewport
     private int width;
     // Height of the viewport
@@ -70,8 +72,8 @@ class GLRenderer {
     public void drawCircle(Vector2f center, float radius, Color color) {
         // Implementation from:
         // Source: https://faun.pub/draw-circle-in-opengl-c-2da8d9c2c103
-        float anglePerVert = 360.0f / (float)GLCircle.DEFAULT_SEGMENTS_COUNT;
-        Vector2f[] vertices = new Vector2f[GLCircle.DEFAULT_SEGMENTS_COUNT];
+        float anglePerVert = 360.0f / (float)DEFAULT_SEGMENTS_COUNT;
+        Vector2f[] vertices = new Vector2f[DEFAULT_SEGMENTS_COUNT];
         for (int i = 0; i < vertices.length; i++) {
             float angle = anglePerVert * i;
             vertices[i] = makeNDC(new Vector2f(

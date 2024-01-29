@@ -11,8 +11,16 @@ $ mkdir classes
 ```
 $ make init
 ```
-- If not, run the following by either placing it in a `.bat` file or directly in the terminal
+
+- If `make` isn't readily available, run the following by choosing the right one depending on your OS.
+### Windows
 ```
-$ javac -cp src:lib/joml-1.10.5.jar:lib/lwjgl-glfw-natives-linux.jar:lib/lwjgl-glfw.jar:lib/lwjgl.jar:lib/lwjgl-natives-linux.jar:lib/lwjgl-opengl.jar:lib/lwjgl-opengl-natives-linux.jar:lib/lwjgl-stb.jar:lib/lwjgl-stb-natives-linux.jar:classes src/*.java -d classes
-$ java -cp src:lib/joml-1.10.5.jar:lib/lwjgl-glfw-natives-linux.jar:lib/lwjgl-glfw.jar:lib/lwjgl.jar:lib/lwjgl-natives-linux.jar:lib/lwjgl-opengl.jar:lib/lwjgl-opengl-natives-linux.jar:lib/lwjgl-stb.jar:lib/lwjgl-stb-natives-linux.jar:classes Main
+javac -cp src:lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwjgl.jar:lib/common/lwjgl-opengl.jar:lib/common/lwjgl-stb.jar:lib/windows/lwjgl-glfw-natives-windows.jar:lib/windows/lwjgl-natives-windows.jar:lib/windows/lwjgl-opengl-natives-windows.jar:lib/windows/lwjgl-stb-natives-windows.jar:classes src/*.java -d classes
+java -cp src:lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwjgl.jar:lib/common/lwjgl-opengl.jar:lib/common/lwjgl-stb.jar:lib/windows/lwjgl-glfw-natives-windows.jar:lib/windows/lwjgl-natives-windows.jar:lib/windows/lwjgl-opengl-natives-windows.jar:lib/windows/lwjgl-stb-natives-windows.jar:classes Main
+```
+
+### Linux
+```
+javac -cp src:lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwjgl.jar:lib/common/lwjgl-opengl.jar:lib/common/lwjgl-stb.jar:lib/linux/lwjgl-glfw-natives-linux.jar:lib/linux/lwjgl-natives-linux.jar:lib/linux/lwjgl-opengl-natives-linux.jar:lib/linux/lwjgl-stb-natives-linux.jar:classes src/*.java -d classes
+java -cp src:lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwjgl.jar:lib/common/lwjgl-opengl.jar:lib/common/lwjgl-stb.jar:lib/linux/lwjgl-glfw-natives-linux.jar:lib/linux/lwjgl-natives-linux.jar:lib/linux/lwjgl-opengl-natives-linux.jar:lib/linux/lwjgl-stb-natives-linux.jar:classes Main
 ```
