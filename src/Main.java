@@ -24,7 +24,7 @@ class Main {
     static boolean wireframe;
 
     public static void main(String[] args) {
-		System.out.println("Hello LWJGL " + Version.getVersion() + "!");
+        Logger.info("Starting LWJGL " + Version.getVersion() + "!");
 
 		init();
 		loop();
@@ -55,7 +55,7 @@ class Main {
             rend.setWidth(w);
             rend.setHeight(h);
             glViewport(0, 0, w, h);
-            System.out.printf("[RESIZE] new window size: (%d, %d)\n", w, h);
+            Logger.info("New resize (" + w + ", " + h + ")");
         });
 
 		// Run the rendering loop until the user has attempted to close
@@ -97,7 +97,10 @@ class Main {
 		if (window == NULL)
 			throw new RuntimeException("Failed to create the GLFW window");
 
+        Logger.info("Window size intialized - (" + width + ", " + height + ")");
+
         rend = new GLRenderer(width, height);
+        Logger.info("Initialized renderer");
 
 		// Get the thread stack and push a new frame
 		try (MemoryStack stack = stackPush()) {

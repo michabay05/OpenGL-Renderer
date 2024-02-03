@@ -9,11 +9,6 @@ import java.nio.file.Paths;
 // TODO: look into using java buffers instead of arrays for primitive types that need
 // to be passed by reference
 
-// In the future, there will more shader types such as textures, lighting, etc.
-enum ShaderType {
-    Triangle,
-}
-
 class Shader {
     // Stores the filepath of the vertex shader
     private final String vertexFilePath;
@@ -47,10 +42,7 @@ class Shader {
             default:
                 vertexFilePath = null;
                 fragmentFilePath = null;
-                System.err.println("Unknown type of shader");
-                // Currently, this simply exits but should handled more gracefully
-                // in the future
-                System.exit(0);
+                Logger.fatal("Unknown type of shader");
                 break;
         }
     }
@@ -83,13 +75,12 @@ class Shader {
 
         int[] success = new int[1];
         glGetProgramiv(progID, GL_LINK_STATUS, success);
-        if (success[0] == GL_TRUE) {
-            System.err.println("[INFO] Successfully linked shaders to program.");
-        } else {
-            System.err.println("[ERROR] Unable to link shaders to program.");
+        if (success[0] != GL_TRUE) {
+            Logger.warn("Unable to link shader to program.");
             System.err.println(glGetProgramInfoLog(progID));
             return false;
         }
+        Logger.info("Successfully linked shaders to program.");
         // Use shader after compiling and linking shader program
         programID = progID;
         // NOTE: To apply the shader, the shader must be explicitly called, i.e. bound
@@ -118,8 +109,7 @@ class Shader {
         try {
             source = new String(Files.readAllBytes(Paths.get(filepath)));
         } catch (IOException ex) {
-            System.err.println("[ERROR] Failed to read shader into memory");
-            System.err.println(ex.getMessage());
+            Logger.panic("Failed to read the file into memory.");
             return false;
         }
         glShaderSource(shaderID, source);
@@ -127,16 +117,15 @@ class Shader {
 
         int[] success = new int[1];
         glGetShaderiv(shaderID, GL_COMPILE_STATUS, success);
-        if (success[0] == GL_TRUE) {
-            System.out.printf("[INFO] Compiled %s shader: '%s'.\n", 
-                    isVertexShader ? "vertex" : "fragment", filepath);
-        } else {
-            System.err.printf("[ERROR] Unable to load %s shader file: '%s'.\n",
-                    isVertexShader ? "vertex" : "fragment",
-                    filepath);
+        if (success[0] != GL_TRUE) {
+            Logger.warn(String.format("Unable to load %s shader file: '%s'.",
+                        isVertexShader ? "vertex" : "fragment",
+                        filepath));
             System.err.println(glGetShaderInfoLog(shaderID));
             return false;
         }
+        Logger.info(String.format("Compiled %s shader: '%s'.", 
+                    isVertexShader ? "vertex" : "fragment", filepath));
         if (isVertexShader) {
             vertexShaderID = shaderID;
         } else {

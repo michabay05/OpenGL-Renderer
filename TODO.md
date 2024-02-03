@@ -14,3 +14,4 @@
 - [ ] ADD: shader reloading feature
 - [ ] ADD: Create an array of all the uniforms in both shaders
 - [ ] REFACTOR: using `IntBuffer`s instead of an `int` array to pass a `int`(primitive) by reference  
+- [ ] REFACTOR: repeatedly setting and unsetting the shader can lead to worse performance.
