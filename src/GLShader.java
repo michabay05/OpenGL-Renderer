@@ -9,23 +9,18 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 enum ShaderType {
-    Triangle,
-    Texture,
+    Texture
 }
 
 class GLShader {
-    private static int triProgramID;
     private static int texProgramID;
-
     private static ShaderType current;
-
-    public static void update(ShaderType st) {
-        current = st;
-    }
+    private static boolean isLoaded = false;
 
     // NOTE: changing program frequently might lead to worse performance
     //       this needs to be refactored at some point in the future
-    public static void bind() {
+    public static void bind(ShaderType st) {
+        current = st;
         glUseProgram(getCurrentProgramID());
     }
 
@@ -33,21 +28,26 @@ class GLShader {
         glUseProgram(0);
     }
 
-    public static boolean loadAll() {
-        int tempTri = load(ShaderType.Triangle);
-        int tempTex = load(ShaderType.Texture);
-        if (tempTri != 0) triProgramID = tempTri;
-        if (tempTex != 0) texProgramID = tempTex;
-        return tempTri != 0 && tempTex != 0;
+    public static void loadAll() {
+        if (!isLoaded) {
+            int tempTex = load(ShaderType.Texture);
+            if (tempTex == 0) {
+                Logger.Warn("Couldn't load texture shader");
+            } else {
+                if (tempTex != 0) texProgramID = tempTex;
+                isLoaded = true;
+            }
+        }
     }
 
     // Attachs and links the compiled shader sources to the shader program ID
     // NOTE: Return 0 signals failure
     public static int load(ShaderType st) {
-        String vertexFilePath = null, fragmentFilePath = null;
-        getShaderPaths(st, vertexFilePath, fragmentFilePath);
+        String vertexFilePath = getVertexPath(st);
+        String fragmentFilePath = getFragmentPath(st);
+
         int vertexShaderID = compile(vertexFilePath, true);
-        int fragmentShaderID = compile(fragmentFilePath, true);
+        int fragmentShaderID = compile(fragmentFilePath, false);
         if (vertexShaderID == 0 || fragmentShaderID == 0) return 0;
 
         int progID = glCreateProgram();
@@ -58,18 +58,17 @@ class GLShader {
         int[] success = new int[1];
         glGetProgramiv(progID, GL_LINK_STATUS, success);
         if (success[0] != GL_TRUE) {
-            Logger.warn("Unable to link shader to program.");
+            Logger.Warn("Unable to link shader to program.");
             System.err.println(glGetProgramInfoLog(progID));
             return 0;
         }
-        Logger.info("Successfully linked shaders to program.");
+        Logger.Info("Successfully linked shaders to program.");
 
         // After creating the shaders and linking them, the original shaders have to deleted
         glDeleteShader(vertexShaderID);
         glDeleteShader(fragmentShaderID);
         return progID;
     }
-
 
     /* ========== UNIFORM SETTING METHODS ========== */
     public void setFloat(String name, float v0) {
@@ -91,14 +90,14 @@ class GLShader {
     // the code appropriately (depending on which shader it is)
     // NOTE: Return 0 signals failure
     private static int compile(String filepath, boolean isVertexShader) {
-        if (filepath == null) Logger.panic("Shader filepath is null");
+        if (filepath == null) Logger.Panic("Shader filepath is null");
 
         int shaderID = glCreateShader(isVertexShader ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
         String source = null;
         try {
             source = new String(Files.readAllBytes(Paths.get(filepath)));
         } catch (IOException ex) {
-            Logger.panic("Failed to read the file into memory.");
+            Logger.Panic("Failed to read the file into memory.");
             return 0;
         }
         glShaderSource(shaderID, source);
@@ -107,40 +106,47 @@ class GLShader {
         int[] success = new int[1];
         glGetShaderiv(shaderID, GL_COMPILE_STATUS, success);
         if (success[0] != GL_TRUE) {
-            Logger.warn(String.format("Unable to load %s shader file: '%s'.",
+            Logger.Warn(String.format("Unable to load %s shader file: '%s'.",
                         isVertexShader ? "vertex" : "fragment",
                         filepath));
             System.err.println(glGetShaderInfoLog(shaderID));
             return 0;
         }
-        Logger.info(String.format("Compiled %s shader: '%s'.", 
+        Logger.Info(String.format("Compiled %s shader: '%s'.", 
                     isVertexShader ? "vertex" : "fragment", filepath));
         return shaderID;
     }
 
-    private static void getShaderPaths(ShaderType st, String vertPath, String fragPath) {
+    private static String getVertexPath(ShaderType st) {
         switch (st) {
-            case Triangle:
-                vertPath = "shader/simple.vert";
-                fragPath = "shader/simple.frag";
-                break;
             case Texture:
-                vertPath = "shader/texture.vert";
-                fragPath = "shader/texture.frag";
-                break;
+                return "src/texture.vert";
             default:
-                Logger.fatal("Unknown shader type");
+                Logger.Unreachable();
         }
+        // Should be unreachable here! The compiler considers this an
+        // error, for some reason
+        return null;
+    }
+
+    private static String getFragmentPath(ShaderType st) {
+        switch (st) {
+            case Texture:
+                return "src/texture.frag";
+            default:
+                Logger.Unreachable();
+        }
+        // Should be unreachable here! The compiler considers this an
+        // error, for some reason
+        return null;
     }
 
     private static int getCurrentProgramID() {
         switch (current) {
-            case Triangle:
-                return triProgramID;
             case Texture:
                 return texProgramID;
             default:
-                Logger.warn("Unknown shader type");
+                Logger.Warn("Unknown shader type");
                 return 0;
         }
     }

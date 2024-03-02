@@ -1,254 +1,248 @@
 import java.util.ArrayList;
 
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL33;
 
 import static org.lwjgl.opengl.GL33.*;
 
-class GLRenderer {
-    private static final int DEFAULT_SEGMENTS_COUNT = 32;
-
-    // Width of the viewport
+public class GLRenderer {
     private int width;
-    // Height of the viewport
     private int height;
 
-    // An array of all 'unique' vertex information for all objects
-    private ArrayList<VertexInfo> info;
-    // A list of indices that point to the vertex information array
-    private ArrayList<Integer> inds;
-    // Handles both the vertex and fragment shader
-    private Shader shader;
-    // Used to check if shader is already loaded so as to not load
-    // the shader multiple times
-    private boolean isShaderLoaded;
+    private int quadVao;
+    private int quadVbo;
+    private int quadIbo;
+    private float[] vertices;
+    private int vertCount;
+    private int indexCount;
+    private int[] textureSlots;
+    private int textureCount;
 
-    public GLRenderer(int w, int h) {
-        width = w;
-        height = h;
-        info = new ArrayList<>();
-        inds = new ArrayList<>();
+    // Statistics
+    private int quadCounter;
+    private int drawCounter;
 
-        shader = new Shader(ShaderType.Triangle);
-        isShaderLoaded = false;
+    private static final int MAX_QUAD_COUNT = 1000;
+    private static final int MAX_VERTEX_COUNT = MAX_QUAD_COUNT * 4;
+    private static final int MAX_INDEX_COUNT = MAX_QUAD_COUNT * 6;
+    // Some devices have 32 texture slots, some might have more, some might have less. '16' is just a guess
+    // TODO: query the maximum texture slots of a given machine, instead of hardcoding it
+    private static final int MAX_TEXTURE_COUNT = 32;
+    private static final int WHITE_TEXTURE_INDEX = 0;
+
+    public GLRenderer(int width, int height) {
+        this.width = width;
+        this.height = height;
+        quadVao = 0;
+        quadVbo = 0;
+        quadIbo = 0;
+        vertices = null;
+        vertCount = 0;
+        indexCount = 0;
+        textureSlots = null;
+        textureCount = 0;
     }
 
-    // Clear the screen with the specified color and clear out
-    // all the vertex information array and indices list
-    public void clear(int r, int g, int b) {
-        float rf = (float) r / 255.0f;
-        float gf = (float) g / 255.0f;
-        float bf = (float) b / 255.0f;
-        glClearColor(rf, gf, bf, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        // Clear primitive list for new frame
-        info.clear();
-        inds.clear();
-    }
+    public int GetWidth() { return width; }
+    public int GetHeight() { return height; }
 
-    public void drawRect(int x, int y, int w, int h, Color color) {
-        drawRect(new Vector2f(x, y), new Vector2f(w, h), color);
-    }
+    public void SetWidth(int newWidth) { width = newWidth; }
+    public void SetHeight(int newHeight) { height = newHeight; }
 
-    // Renders a rectangle of a specified color
-    public void drawRect(Vector2f pos, Vector2f size, Color color) {
-        Vector2f[] corners = {
-            makeNDC(new Vector2f(pos.x, pos.y)),
-            makeNDC(new Vector2f(pos.x, pos.y + size.y)),
-            makeNDC(new Vector2f(pos.x + size.x, pos.y + size.y)),
-            makeNDC(new Vector2f(pos.x + size.x, pos.y)),
-        };
-        int[] localInds = {
-            0, 1, 2, // First triangle
-            0, 2, 3  // Second triangle
-        };
-        // Modify index list from a local index array to global 'verts' index array
-        for (int i = 0; i < localInds.length; i++) {
-            Vector2f it = corners[localInds[i]];
-            handleVertInfo(it, color);
+    // NOTE: this should called after the OpenGL context has been created.
+    // Otherwise, it could crash the whole system
+    public void Init() {
+        quadVao = glGenVertexArrays();
+        glBindVertexArray(quadVao);
+
+        quadVbo = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, quadVbo);
+        vertices = new float[VertexInfo.FLOATS * MAX_VERTEX_COUNT];
+        glBufferData(GL_ARRAY_BUFFER, vertices, GL_DYNAMIC_DRAW);
+
+
+        // Fill indices with this pattern
+        // Pattern: [[0, 1, 2] [0, 2, 3]]
+        int[] indices = new int[MAX_INDEX_COUNT];
+        int num = 0;
+        for (int i = 0; i < indices.length; i += 6) {
+            indices[i+0] = 0+num;
+            indices[i+1] = 1+num;
+            indices[i+2] = 2+num;
+
+            indices[i+3] = 0+num;
+            indices[i+4] = 2+num;
+            indices[i+5] = 3+num;
+            num += 4;
         }
-    }
+        quadIbo = glGenBuffers();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadIbo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
 
-    public void drawCircle(Vector2f center, float radius, Color color) {
-        // Implementation from:
-        // Source: https://faun.pub/draw-circle-in-opengl-c-2da8d9c2c103
-        float anglePerVert = 360.0f / (float)DEFAULT_SEGMENTS_COUNT;
-        Vector2f[] vertices = new Vector2f[DEFAULT_SEGMENTS_COUNT];
-        for (int i = 0; i < vertices.length; i++) {
-            float angle = anglePerVert * i;
-            vertices[i] = makeNDC(new Vector2f(
-                center.x + radius * (float) Math.cos(Math.toRadians(angle)),
-                center.y + radius * (float) Math.sin(Math.toRadians(angle))
-            ));
-        }
-
-        ArrayList<Vector2f> vl = new ArrayList<>();
-        for (int i = 0; i < vertices.length - 2; i++) {
-            handleVertInfo(vertices[0], color);
-            handleVertInfo(vertices[i+1], color);
-            handleVertInfo(vertices[i+2], color);
-        }
-    }
-
-    public void drawCircle(int x, int y, int radius, Color color) {
-        drawCircle(new Vector2f(x, y), (float)radius, color);
-    }
-
-    public void begin() {
-        if (!isShaderLoaded) {
-            shader.load();
-            isShaderLoaded = true;
-        }
-    }
-
-    public void end() {
-        // Generate ID for a new vertex array objects
-        int vaoID = glGenVertexArrays();
-
-        // Bind vertex array to attach the following vertex and index buffers
-        // to this vertex array object (VAO)
-        glBindVertexArray(vaoID);
-
-        // Compling the list of vertex information into one float[] array
-        // to send this data to GPU once.
-        float[] vs = makeVBOData();
-
-        // Generate ID for a vertex buffer objects
-        int vboID = glGenBuffers();
-        // Bind `vboID` to an OpenGL array buffer
-        glBindBuffer(GL_ARRAY_BUFFER, vboID);
-        // Bind the compiled float[] to the current bound buffer data
-        glBufferData(GL_ARRAY_BUFFER, vs, GL_STATIC_DRAW);
-
-        // Specify the information of the 1st (index 0) attribute sent to the vertex shader
-        // DETAIL: a vec2(2 floats) that specifies 'position' of the current vertex
-        glVertexAttribPointer(0, 2, GL_FLOAT, false, VertexInfo.BYTES, VertexInfo.POS_OFFSET);
-        // Enable the attribute at (index 0)
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, VertexInfo.TOTAL_BYTES, VertexInfo.POS_OFFSET);
         glEnableVertexAttribArray(0);
-
-        // Specify the information of the 2nd (index 1) attribute sent to the vertex shader
-        // DETAIL: a vec3(3 floats) that specifies 'color' of the current vertex
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, VertexInfo.BYTES, VertexInfo.CLR_OFFSET);
-        // Enable the attribute at (index 1)
+        glVertexAttribPointer(1, 4, GL_FLOAT, false, VertexInfo.TOTAL_BYTES, VertexInfo.COLOR_OFFSET);
         glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 2, GL_FLOAT, false, VertexInfo.TOTAL_BYTES, VertexInfo.TEX_COORD_OFFSET);
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(3, 1, GL_FLOAT, false, VertexInfo.TOTAL_BYTES, VertexInfo.TEX_ID_OFFSET);
+        glEnableVertexAttribArray(3);
 
-        // Compiling all the index buffer list into an int[] array
-        int[] indArr = new int[inds.size()];
-        for (int i = 0; i < inds.size(); i++) {
-            indArr[i] = inds.get(i);
+        // Textures
+        int whiteTex = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, whiteTex);
+        // set the texture wrapping parameters
+        // set texture wrapping to GL_REPEAT (default wrapping method)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // set texture filtering parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        int color = 0xffffffff; // WHITE (255, 255, 255, 255)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, color);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        // int maxTextureSlots;
+        // glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, (GLint*)&maxTextureSlots);
+        textureSlots = new int[MAX_TEXTURE_COUNT];
+        textureSlots[WHITE_TEXTURE_INDEX] = whiteTex;
+        textureCount = 1;
+
+        GLShader.loadAll();
+    }
+
+    public void Clear(float r, float g, float b, float a) {
+        glClearColor(r, g, b, a);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    public void AddQuad(Vector2f pos, Vector2f size, Color color) {
+        if (indexCount >= MAX_INDEX_COUNT) {
+            BatchEnd();
+            BatchFlush();
+            BatchBegin();
         }
 
-        // Generate an ID for an index buffer objects 
-        int eboID = glGenBuffers();
-        // Bind the `eboID` to an Opengl element array buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboID);
-        // Bind the compiled int[] to the current bound index buffer object
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indArr, GL_STATIC_DRAW);
+        float texID = 0.0f;
+        float[] colorfs = color.ToFloatArray();
+        Vector3f[] corners = {
+            // Top Left
+            new Vector3f(pos.x, pos.y, 0.0f),
+            // Bottom Left
+            new Vector3f(pos.x, pos.y + size.y, 0.0f),
+            // Bottom Right
+            new Vector3f(pos.x + size.x, pos.y + size.y, 0.0f),
+            // Top Right
+            new Vector3f(pos.x + size.x, pos.y, 0.0f),
+        };
+        float[][] texCoords = {
+            // Top Left
+            { 0.0f, 1.0f },
+            // Bottom Left
+            { 0.0f, 0.0f },
+            // Bottom Right
+            { 1.0f, 0.0f },
+            // Top Right
+            { 1.0f, 1.0f },
+        };
 
-        shader.bind();
-        // The main(actual) rendering function
-        glDrawElements(GL_TRIANGLES, inds.size(), GL_UNSIGNED_INT, 0);
-
-        // Disabling vertex attrib pointers and unbinding the shader
-        // NOTE: Don't really know if this has to be included or not
-        shader.unbind();
-        glDisableVertexAttribArray(0);
-        glDisableVertexAttribArray(1);
-    }
-
-    public void setWidth(int newWidth) { width = newWidth; }
-
-    public void setHeight(int newHeight) { height = newHeight; }
-
-    // Adds the vertex information if doesn't exist and updates
-    // the index buffer list
-    private void handleVertInfo(Vector2f v, Color c) {
-        int index = addIfNotExist(v, c);
-        inds.add(index);
-    }
-
-    // Add a new vertex information if it doesn't exist in the list
-    private int addIfNotExist(Vector2f v, Color c) {
-        VertexInfo vi = new VertexInfo(v, c);
-        for (int i = 0; i < info.size(); i++) {
-            if (info.get(i).equals(vi)) {
-                return i;
+        for (int i = 0; i < 4; i++) {
+            Vector3f current = ToNDC(corners[i]);
+            float[] currentfs = { current.x, current.y, current.z };
+            VertexInfo vi = new VertexInfo(currentfs, colorfs, texCoords[i], texID);
+            float[] vifs = vi.ToFloatArray();
+            for (int j = 0; j < vifs.length; j++) {
+                vertices[vertCount*VertexInfo.FLOATS+j] = vifs[j];
             }
-        }
-        info.add(vi);
-        return info.size() - 1;
-    }
-
-    // Make a new float[] from an arraylist of vertex informations
-    private float[] makeVBOData() {
-        int n = info.size();
-        int count = VertexInfo.BYTES / Float.BYTES;
-        float[] data = new float[count*n];
-        for (int i = 0; i < n; i++) {
-            VertexInfo vi = info.get(i);
-            data[i*count+0] = vi.pos.x;
-            data[i*count+1] = vi.pos.y;
-            data[i*count+2] = vi.color.r();
-            data[i*count+3] = vi.color.g();
-            data[i*count+4] = vi.color.b();
+            vertCount++;
         }
 
-        return data;
+
+        indexCount += 6;
+        quadCounter++;
     }
 
-    // Take a specified vector and transform it to a normalized
-    // device coordinate (NDC), which ranges from [-1, 1] on both the x and y
-    //     NOTE: Since OpenGL sets (0, 0) at the bottom left of the screen and 
-    //           it makes sense to place (0, 0) on the top left, the y axis
-    //           gets flipped (negated) 
-    private Vector2f makeNDC(Vector2f v) {
-        return new Vector2f(
-            v.x / width * 2 - 1,
-            -(v.y / height * 2 - 1)
+    public void BatchBegin() {
+        vertCount = 0;
+    }
+
+    public void BatchFlush() {
+        for (int i = 0; i < textureCount; i++) {
+            /* Opengl 3.3 (or even earlier, not sure tho) approach */
+            glActiveTexture(GL_TEXTURE0 + i);
+            glBindTexture(GL_TEXTURE_2D, textureSlots[i]);
+            /* Opengl 4.0+ approach */
+            // glBindTextureUnit(i, s);
+        }
+        glBindVertexArray(quadVao);
+        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+        drawCounter++;
+        indexCount = 0;
+        textureCount = 1;
+    }
+
+    public void BatchEnd() {
+        glBindBuffer(GL_ARRAY_BUFFER, quadVbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, vertices);
+    }
+
+    private Vector3f ToNDC(Vector3f v) {
+        // The return vectors z-value is 0.0, for no reason
+        return new Vector3f(
+            (v.x / (float)width) * 2 - 1,
+            -((v.y / (float)height) * 2 - 1),
+            0.0f
         );
-    }
-
-    // A utility method that prints a vec2 in a more intuitive format
-    private String str(Vector2f v) {
-        return String.format("(%.2f, %.2f)", v.x, v.y);
     }
 }
 
-// Each unit of 'data' is made up of a vertex and color
-// size of vertex info -> 2
-//  size of color info -> 3
-//  size of one 'data' -> 5
-//  [[ verts ][ color ]]
-//  [       data       ]
-
-// Stores all the information about a vertex's position and color
 class VertexInfo {
-    // Total number of bytes need to represent all the info related
-    // to one vertex
-    public static final int BYTES = 5 * Float.BYTES;
+    public static final int FLOATS = 3 + 4 + 2 + 1;
+    public static final int TOTAL_BYTES = FLOATS * Float.BYTES;
 
-    // Offset required to get to the 'position' component
-    public static final int POS_OFFSET = 0;
-    // Offset required to get to the 'color' component
-    public static final int CLR_OFFSET = 2 * Float.BYTES;
+    // Attribute offset of vertex info
+    // These values are expressed in total bytes -> (n*Float.BYTES)
+    public static int POS_OFFSET = 0;
+    public static int COLOR_OFFSET = 3*Float.BYTES;
+    public static int TEX_COORD_OFFSET = (3+4)*Float.BYTES;
+    public static int TEX_ID_OFFSET = (3+4+2)*Float.BYTES;
 
-    // Stores the location of a vertex as an normalized device coordinate (NDC)
-    public Vector2f pos;
-    // Stores the color associate with this vertex in terms of floats from [0, 1]
-    // instead of ints from [0, 255]
-    public Color color;
+    public final float[] pos;
+    public final float[] color;
+    public final float[] texCoords;
+    public final float texID;
 
-    public VertexInfo(Vector2f pos, Color color) {
-        this.pos = pos;
-        this.color = color;
+    public VertexInfo(Vector3f pos, Color color, Vector2f texCoords, float texID) {
+        this.pos = new float[] { pos.x, pos.y, pos.z };
+        this.color = new float[] { color.r(), color.g(), color.b(), color.a() };
+        this.texCoords = new float[] { texCoords.x, texCoords.y };
+        this.texID = texID;
     }
 
-    // Redefines equality from the default implementation of Objects
-    @Override
-    public boolean equals(Object other) {
-        if (other == null) return false;
-        if (other.getClass() != this.getClass()) return false;
-        final VertexInfo vi = (VertexInfo) other;
-        return pos.equals(vi.pos) && color.equals(vi.color);
+    public VertexInfo(float[] pos, float[] color, float[] texCoords, float texID) {
+        this.pos = pos;
+        this.color = color;
+        this.texCoords = texCoords;
+        this.texID = texID;
+    }
+
+    public float[] ToFloatArray() {
+        float[] output = new float[VertexInfo.FLOATS];
+        output[0] = pos[0];
+        output[1] = pos[1];
+        output[2] = pos[2];
+
+        output[3] = color[0];
+        output[4] = color[1];
+        output[5] = color[2];
+        output[6] = color[3];
+
+        output[7] = texCoords[0];
+        output[8] = texCoords[1];
+
+        output[9] = texID;
+        return output;
     }
 }
