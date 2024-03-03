@@ -21,6 +21,6 @@ java -cp src:lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwj
 
 ### Linux
 ```
-javac -cp src:lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwjgl.jar:lib/common/lwjgl-opengl.jar:lib/common/lwjgl-stb.jar:lib/linux/lwjgl-glfw-natives-linux.jar:lib/linux/lwjgl-natives-linux.jar:lib/linux/lwjgl-opengl-natives-linux.jar:lib/linux/lwjgl-stb-natives-linux.jar:classes src/*.java -d classes
-java -cp src:lib/common/joml-1.10.5.jar:lib/common/lwjgl-glfw.jar:lib/common/lwjgl.jar:lib/common/lwjgl-opengl.jar:lib/common/lwjgl-stb.jar:lib/linux/lwjgl-glfw-natives-linux.jar:lib/linux/lwjgl-natives-linux.jar:lib/linux/lwjgl-opengl-natives-linux.jar:lib/linux/lwjgl-stb-natives-linux.jar:classes Main
+javac -cp src;lib/common/joml-1.10.5.jar;lib/common/lwjgl-glfw.jar;lib/common/lwjgl.jar;lib/common/lwjgl-opengl.jar;lib/common/lwjgl-stb.jar;lib/linux/lwjgl-glfw-natives-linux.jar;lib/linux/lwjgl-natives-linux.jar;lib/linux/lwjgl-opengl-natives-linux.jar;lib/linux/lwjgl-stb-natives-linux.jar;classes src/*.java -d classes
+java -cp src;lib/common/joml-1.10.5.jar;lib/common/lwjgl-glfw.jar;lib/common/lwjgl.jar;lib/common/lwjgl-opengl.jar;lib/common/lwjgl-stb.jar;lib/linux/lwjgl-glfw-natives-linux.jar;lib/linux/lwjgl-natives-linux.jar;lib/linux/lwjgl-opengl-natives-linux.jar;lib/linux/lwjgl-stb-natives-linux.jar;classes Main
 ```
