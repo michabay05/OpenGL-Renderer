@@ -43,6 +43,5 @@ void main()
         case 31: chosenTex = texture(u_Textures[31], texCoord); break;
         default: chosenTex = texture(u_Textures[ 0], texCoord); break;
     }
-    // gl_FragColor = chosenTex * color;
-    gl_FragColor = chosenTex * vec4(1.0, 0.0, 0.0, 1.0);
+    gl_FragColor = chosenTex * color;
 }

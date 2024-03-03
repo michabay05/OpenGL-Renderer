@@ -31,7 +31,7 @@ public class Renderer {
 
     public void End() {
         glRend.BatchEnd();
-        glRend.BatchFlush();
+        if (glRend.NeedsFlush()) glRend.BatchFlush();
     }
 
     public void ClearBackground(Color color) {

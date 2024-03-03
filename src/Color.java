@@ -70,8 +70,8 @@ class Color {
     // Overrides the default format of printing objects
     @Override
     public String toString() {
-        return String.format("(%d, %d, %d)",
-            (int)(r * 255.f), (int)(g * 255.f), (int)(b * 255.f)
+        return String.format("(%d, %d, %d, %d)",
+            (int)(r * 255.f), (int)(g * 255.f), (int)(b * 255.f), (int)(a * 255.f)
         );
     }
 }

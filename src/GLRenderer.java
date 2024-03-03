@@ -1,10 +1,9 @@
-import java.util.ArrayList;
-
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.opengl.GL33;
 
 import static org.lwjgl.opengl.GL33.*;
+
+import java.nio.ByteBuffer;
 
 public class GLRenderer {
     private int width;
@@ -23,10 +22,12 @@ public class GLRenderer {
     private int quadCounter;
     private int drawCounter;
 
+    private boolean isShaderBound;
+
     private static final int MAX_QUAD_COUNT = 1000;
     private static final int MAX_VERTEX_COUNT = MAX_QUAD_COUNT * 4;
     private static final int MAX_INDEX_COUNT = MAX_QUAD_COUNT * 6;
-    // Some devices have 32 texture slots, some might have more, some might have less. '16' is just a guess
+    // Some devices have 32 texture slots, some might have more, some might have less. '32' is just a guess
     // TODO: query the maximum texture slots of a given machine, instead of hardcoding it
     private static final int MAX_TEXTURE_COUNT = 32;
     private static final int WHITE_TEXTURE_INDEX = 0;
@@ -42,6 +43,9 @@ public class GLRenderer {
         indexCount = 0;
         textureSlots = null;
         textureCount = 0;
+        quadCounter = 0;
+        drawCounter = 0;
+        isShaderBound = false;
     }
 
     public int GetWidth() { return width; }
@@ -100,8 +104,8 @@ public class GLRenderer {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        int color = 0xffffffff; // WHITE (255, 255, 255, 255)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, color);
+        float[] color = Color.WHITE.ToFloatArray();
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_FLOAT, color);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         // int maxTextureSlots;
@@ -109,6 +113,9 @@ public class GLRenderer {
         textureSlots = new int[MAX_TEXTURE_COUNT];
         textureSlots[WHITE_TEXTURE_INDEX] = whiteTex;
         textureCount = 1;
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         GLShader.loadAll();
     }
@@ -149,7 +156,7 @@ public class GLRenderer {
         };
 
         for (int i = 0; i < 4; i++) {
-            Vector3f current = ToNDC(corners[i]);
+            Vector3f current = toNDC(corners[i]);
             float[] currentfs = { current.x, current.y, current.z };
             VertexInfo vi = new VertexInfo(currentfs, colorfs, texCoords[i], texID);
             float[] vifs = vi.ToFloatArray();
@@ -159,13 +166,17 @@ public class GLRenderer {
             vertCount++;
         }
 
-
         indexCount += 6;
         quadCounter++;
     }
 
     public void BatchBegin() {
         vertCount = 0;
+        if (!isShaderBound) {
+            GLShader.bind(ShaderType.Texture);
+            isShaderBound = true;
+            Logger.Info("Shader: Bound Texture shader");
+        }
     }
 
     public void BatchFlush() {
@@ -188,7 +199,11 @@ public class GLRenderer {
         glBufferSubData(GL_ARRAY_BUFFER, 0, vertices);
     }
 
-    private Vector3f ToNDC(Vector3f v) {
+    public boolean NeedsFlush() {
+        return indexCount > 0;
+    }
+
+    private Vector3f toNDC(Vector3f v) {
         // The return vectors z-value is 0.0, for no reason
         return new Vector3f(
             (v.x / (float)width) * 2 - 1,
@@ -204,10 +219,10 @@ class VertexInfo {
 
     // Attribute offset of vertex info
     // These values are expressed in total bytes -> (n*Float.BYTES)
-    public static int POS_OFFSET = 0;
-    public static int COLOR_OFFSET = 3*Float.BYTES;
-    public static int TEX_COORD_OFFSET = (3+4)*Float.BYTES;
-    public static int TEX_ID_OFFSET = (3+4+2)*Float.BYTES;
+    public static final int POS_OFFSET = 0;
+    public static final int COLOR_OFFSET = 3*Float.BYTES;
+    public static final int TEX_COORD_OFFSET = (3+4)*Float.BYTES;
+    public static final int TEX_ID_OFFSET = (3+4+2)*Float.BYTES;
 
     public final float[] pos;
     public final float[] color;
