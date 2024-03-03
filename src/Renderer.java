@@ -31,7 +31,10 @@ public class Renderer {
 
     public void End() {
         glRend.BatchEnd();
-        if (glRend.NeedsFlush()) glRend.BatchFlush();
+        // TODO: Doing an additional flush is unnecessary
+        // The reason it's here is because, currently, there is no mechanism to handle the rendering of leftover vertices
+        // Therefore, the additional flush ensures that there aren't any vertices left that haven't been rendered
+        glRend.BatchFlush();
     }
 
     public void ClearBackground(Color color) {

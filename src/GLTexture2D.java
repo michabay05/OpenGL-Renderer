@@ -11,6 +11,12 @@ public class GLTexture2D {
         this.id = createTextureFromImage(image);
     }
 
+    public GLTexture2D(int id, int width, int height) {
+        this.id = id;
+        this.width = width;
+        this.height = height;
+    }
+
     public int GetID() { return id; }
     public int GetWidth() { return width; }
     public int GetHeight() { return height; }
