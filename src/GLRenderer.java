@@ -4,6 +4,7 @@ import org.joml.Vector3f;
 import static org.lwjgl.opengl.GL33.*;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 public class GLRenderer {
     private int width;
@@ -15,7 +16,7 @@ public class GLRenderer {
     private float[] vertices;
     private int vertCount;
     private int indexCount;
-    private int[] textureSlots;
+    private GLTexture2D[] textureSlots;
     private int textureCount;
 
     // Statistics
@@ -65,7 +66,6 @@ public class GLRenderer {
         vertices = new float[VertexInfo.FLOATS * MAX_VERTEX_COUNT];
         glBufferData(GL_ARRAY_BUFFER, vertices, GL_DYNAMIC_DRAW);
 
-
         // Fill indices with this pattern
         // Pattern: [[0, 1, 2] [0, 2, 3]]
         int[] indices = new int[MAX_INDEX_COUNT];
@@ -93,24 +93,14 @@ public class GLRenderer {
         glVertexAttribPointer(3, 1, GL_FLOAT, false, VertexInfo.TOTAL_BYTES, VertexInfo.TEX_ID_OFFSET);
         glEnableVertexAttribArray(3);
 
-        // Textures
-        int whiteTex = glGenTextures();
-        glBindTexture(GL_TEXTURE_2D, whiteTex);
-        // set the texture wrapping parameters
-        // set texture wrapping to GL_REPEAT (default wrapping method)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        Image whiteImg = new Image(Color.WHITE, 1, 1);
+        GLTexture2D whiteTex = new GLTexture2D(whiteImg);
 
-        float[] color = Color.WHITE.ToFloatArray();
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_FLOAT, color);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        // NOTE: The following is used to query the maximum textures available on a device from OpenGL.
+        // IntBuffer maxTextureSlots = IntBuffer.allocate(1);
+        // glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, maxTextureSlots);
 
-        // int maxTextureSlots;
-        // glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, (GLint*)&maxTextureSlots);
-        textureSlots = new int[MAX_TEXTURE_COUNT];
+        textureSlots = new GLTexture2D[MAX_TEXTURE_COUNT];
         textureSlots[WHITE_TEXTURE_INDEX] = whiteTex;
         textureCount = 1;
 
@@ -170,6 +160,9 @@ public class GLRenderer {
         quadCounter++;
     }
 
+    public void AddTexturedQuad(Vector2f pos, Vector2f size, GLTexture2D tex) {
+    }
+
     public void BatchBegin() {
         vertCount = 0;
         if (!isShaderBound) {
@@ -183,7 +176,7 @@ public class GLRenderer {
         for (int i = 0; i < textureCount; i++) {
             /* Opengl 3.3 (or even earlier, not sure tho) approach */
             glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(GL_TEXTURE_2D, textureSlots[i]);
+            glBindTexture(GL_TEXTURE_2D, textureSlots[i].GetID());
             /* Opengl 4.0+ approach */
             // glBindTextureUnit(i, s);
         }
