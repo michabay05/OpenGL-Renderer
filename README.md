@@ -6,3 +6,4 @@ This renderer is written in Java using the [LWJGL framework](https://www.lwjgl.o
 - ["The Cherno" - Batch Rendering Youtube Playlist](https://www.youtube.com/playlist?list=PLlrATfBNZ98f5vZ8nJ6UengEkZUMC4fy5)
 - [learnopengl.com - Getting Started](https://learnopengl.com/Getting-started/OpenGL)
 - [opengl-tutorial.com](https://www.opengl-tutorial.org/)
+- [LWJGL stb loading - `fynnfluegge/oreon-engine`](https://github.com/fynnfluegge/oreon-engine/blob/main/oreonengine/oe-gl-api/src/main/java/org/oreon/core/gl/texture/GLImageLoader.java)
