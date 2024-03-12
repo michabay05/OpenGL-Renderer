@@ -34,7 +34,8 @@ public class GLTexture2D {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         float[] pixels = image.ToColorArray();
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image.GetWidth(), image.GetHeight(), 0, GL_RGBA, GL_FLOAT, pixels);
+        int format = image.GetComponent() == 3 ? GL_RGB : GL_RGBA8;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, image.GetWidth(), image.GetHeight(), 0, GL_RGBA, GL_FLOAT, pixels);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         return textureID;

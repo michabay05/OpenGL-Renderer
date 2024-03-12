@@ -16,7 +16,7 @@ public class GLRenderer {
     private float[] vertices;
     private int vertCount;
     private int indexCount;
-    private GLTexture2D[] textureSlots;
+    private int[] textureSlots;
     private int textureCount;
 
     // Statistics
@@ -100,14 +100,31 @@ public class GLRenderer {
         // IntBuffer maxTextureSlots = IntBuffer.allocate(1);
         // glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, maxTextureSlots);
 
-        textureSlots = new GLTexture2D[MAX_TEXTURE_COUNT];
-        textureSlots[WHITE_TEXTURE_INDEX] = whiteTex;
+        textureSlots = new int[MAX_TEXTURE_COUNT];
+        textureSlots[WHITE_TEXTURE_INDEX] = whiteTex.GetID();
         textureCount = 1;
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        GLShader.loadAll();
+        GLShader.LoadAll();
+    
+        if (!isShaderBound) {
+            GLShader.bind(ShaderType.Texture);
+            // Set texture uniforms located in fragment shader
+            int[] samplers = new int[MAX_TEXTURE_COUNT];
+            for (int i = 0; i < samplers.length; i++)
+                samplers[i] = i;
+            GLShader.SetIntegerArr("u_Textures", samplers);
+            isShaderBound = true;
+            Logger.Info("Shader: Bound Texture shader");
+        }
+    }
+
+    public void DeInit() {
+        glDeleteVertexArrays(quadVao);
+        glDeleteBuffers(quadVbo);
+        glDeleteBuffers(quadIbo);
     }
 
     public void Clear(float r, float g, float b, float a) {
@@ -161,22 +178,75 @@ public class GLRenderer {
     }
 
     public void AddTexturedQuad(Vector2f pos, Vector2f size, GLTexture2D tex) {
+        // NOTE: white tint equates to no tint of image
+        AddTintedTexturedQuad(pos, size, tex, Color.WHITE);
+    }
+
+    public void AddTintedTexturedQuad(Vector2f pos, Vector2f size, GLTexture2D tex, Color tint) {
+        if (indexCount >= MAX_INDEX_COUNT || textureCount > 31) {
+            BatchEnd();
+            BatchFlush();
+            BatchBegin();
+        }
+        float textureID = 0.0f;
+        for (int i = 1; i < textureCount; i++) {
+            if (textureSlots[i] == tex.GetID()) {
+                textureID = (float)i;
+                break;
+            }
+        }
+        if (textureID == 0.0f) {
+            textureID = (float)textureCount;
+            textureSlots[textureCount] = tex.GetID();
+            textureCount++;
+        }
+
+        float[] tintfs = tint.ToFloatArray();
+        Vector3f[] corners = {
+            // Top Left
+            new Vector3f(pos.x, pos.y, 0.0f),
+            // Bottom Left
+            new Vector3f(pos.x, pos.y + size.y, 0.0f),
+            // Bottom Right
+            new Vector3f(pos.x + size.x, pos.y + size.y, 0.0f),
+            // Top Right
+            new Vector3f(pos.x + size.x, pos.y, 0.0f),
+        };
+        float[][] texCoords = {
+            // Top Left
+            { 0.0f, 1.0f },
+            // Bottom Left
+            { 0.0f, 0.0f },
+            // Bottom Right
+            { 1.0f, 0.0f },
+            // Top Right
+            { 1.0f, 1.0f },
+        };
+
+        for (int i = 0; i < 4; i++) {
+            Vector3f current = toNDC(corners[i]);
+            float[] currentfs = { current.x, current.y, current.z };
+            VertexInfo vi = new VertexInfo(currentfs, tintfs, texCoords[i], textureID);
+            float[] vifs = vi.ToFloatArray();
+            for (int j = 0; j < vifs.length; j++) {
+                vertices[vertCount*VertexInfo.FLOATS+j] = vifs[j];
+            }
+            vertCount++;
+        }
+
+        indexCount += 6;
+        quadCounter++;
     }
 
     public void BatchBegin() {
         vertCount = 0;
-        if (!isShaderBound) {
-            GLShader.bind(ShaderType.Texture);
-            isShaderBound = true;
-            Logger.Info("Shader: Bound Texture shader");
-        }
     }
 
     public void BatchFlush() {
         for (int i = 0; i < textureCount; i++) {
             /* Opengl 3.3 (or even earlier, not sure tho) approach */
             glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(GL_TEXTURE_2D, textureSlots[i].GetID());
+            glBindTexture(GL_TEXTURE_2D, textureSlots[i]);
             /* Opengl 4.0+ approach */
             // glBindTextureUnit(i, s);
         }
@@ -190,10 +260,6 @@ public class GLRenderer {
     public void BatchEnd() {
         glBindBuffer(GL_ARRAY_BUFFER, quadVbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, vertices);
-    }
-
-    public boolean NeedsFlush() {
-        return indexCount > 0;
     }
 
     private Vector3f toNDC(Vector3f v) {

@@ -29,6 +29,14 @@ public class Renderer {
         glRend.AddQuad(pos, size, color);
     }
 
+    public void DrawTexture(int x, int y, int w, int h, GLTexture2D tex) {
+        DrawTexture(new Vector2f(x, y), new Vector2f(w, h), tex);
+    }
+
+    public void DrawTexture(Vector2f pos, Vector2f size, GLTexture2D tex) {
+        glRend.AddTexturedQuad(pos, size, tex);
+    }
+
     public void End() {
         glRend.BatchEnd();
         // TODO: Doing an additional flush is unnecessary

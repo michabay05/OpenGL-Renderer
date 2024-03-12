@@ -28,9 +28,9 @@ class GLShader {
         glUseProgram(0);
     }
 
-    public static void loadAll() {
+    public static void LoadAll() {
         if (!isLoaded) {
-            int tempTex = load(ShaderType.Texture);
+            int tempTex = Load(ShaderType.Texture);
             if (tempTex == 0) {
                 Logger.Warn("Couldn't load texture shader");
             } else {
@@ -42,7 +42,7 @@ class GLShader {
 
     // Attachs and links the compiled shader sources to the shader program ID
     // NOTE: Return 0 signals failure
-    public static int load(ShaderType st) {
+    public static int Load(ShaderType st) {
         String vertexFilePath = getVertexPath(st);
         String fragmentFilePath = getFragmentPath(st);
 
@@ -71,19 +71,24 @@ class GLShader {
     }
 
     /* ========== UNIFORM SETTING METHODS ========== */
-    public void setFloat(String name, float v0) {
+    public static void SetFloat(String name, float v0) {
         int loc = glGetUniformLocation(getCurrentProgramID(), name);
         glUniform1f(loc, v0);
     }
 
-    public void setV2f(String name, float v0, float v1) {
+    public static void SetV2f(String name, float v0, float v1) {
         int loc = glGetUniformLocation(getCurrentProgramID(), name);
         glUniform2f(loc, v0, v1);
     }
 
-    public void setV3f(String name, float v0, float v1, float v2) {
+    public static void SetV3f(String name, float v0, float v1, float v2) {
         int loc = glGetUniformLocation(getCurrentProgramID(), name);
         glUniform3f(loc, v0, v1, v2);
+    }
+
+    public static void SetIntegerArr(String name, int[] arr) {
+        int loc = glGetUniformLocation(getCurrentProgramID(), name);
+        glUniform1iv(loc, arr);
     }
 
     // Reads the source code of the vertex or fragment shader and compiles the code

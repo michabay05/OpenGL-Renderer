@@ -3,10 +3,14 @@ import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
-import java.util.ArrayList;
-import org.joml.Vector2f;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.IntBuffer;
+import java.nio.channels.SeekableByteChannel;
 
-import java.nio.*;
+import java.util.ArrayList;
+
+import org.joml.Vector2f;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -63,6 +67,11 @@ class Main {
 
         rend.Init();
 
+        Image img = new Image(Color.GREEN, 300, 300);
+        img.ToPPMFile("output.ppm");
+        Logger.Fatal(null);
+        GLTexture2D tex = new GLTexture2D(img);
+
         // Run the rendering loop until the user has attempted to close
         // the window or has pressed the ESCAPE key.
         while (!glfwWindowShouldClose(window)) {
@@ -71,7 +80,8 @@ class Main {
             rend.ClearBackground(Color.DARKGRAY);
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++)
-                    rend.DrawRect(30 + 100 * i, 30+100*j, 50, 50, Color.SKYBLUE);
+                    // rend.DrawRect(30 + 100 * i, 30+100*j, 50, 50, Color.SKYBLUE);
+                    rend.DrawTexture(30 + 100 * i, 30+100*j, 50, 50, tex);
             }
             rend.End();
 
